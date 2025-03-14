@@ -71,11 +71,13 @@ public class ModelManager {
     }
 
     public void sendMessage(String prompt, CallBacks callback) {
+        chat.getHistory().add(new Content("user", List.of(new TextPart(prompt))));
         chat.sendMessage(prompt,
                 new Continuation<GenerateContentResponse>() {
                     @NonNull
                     @Override
                     public CoroutineContext getContext() {
+
                         return EmptyCoroutineContext.INSTANCE;
                     }
 
@@ -84,6 +86,7 @@ public class ModelManager {
                         if (result instanceof Result.Failure) {
                             callback.onModelError(((Result.Failure) result).exception);
                         } else {
+                            chat.getHistory().remove(chat.getHistory().size()-2);
                             callback.onModelSuccess(((GenerateContentResponse) result).getText());
                         }
                     }

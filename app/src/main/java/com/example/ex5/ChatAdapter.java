@@ -20,11 +20,18 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
     private static final int VIEW_TYPE_MODEL = 1;
 
     private List<Content> chatHistory;
+    private RecyclerView recyclerView;
 
     public ChatAdapter(List<Content> chatHistory) {
 
         this.chatHistory = new ArrayList<Content>();
-        //this.chatHistory.addAll(chatHistory);
+
+    }
+
+    @Override
+    public void onAttachedToRecyclerView(@NonNull RecyclerView recyclerView) {
+        super.onAttachedToRecyclerView(recyclerView);
+        this.recyclerView = recyclerView; // Store reference to RecyclerView
     }
 
     public static class MessageViewHolder extends RecyclerView.ViewHolder {
@@ -69,5 +76,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
             chatHistory.add(newChatHistory.get(oldSize + i));
             notifyItemInserted(oldSize + i);
         }
+        if (chatHistory.size() > 0)
+            this.recyclerView.post(() -> recyclerView.smoothScrollToPosition(chatHistory.size() - 1));
+
     }
 }
