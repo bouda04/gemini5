@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.Html;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -39,7 +40,9 @@ public class ModelManager {
 
 
     private ModelManager(Context context) {
-        final String SYSTEM_PROMPT = context.getString(R.string.system_prompt);
+        final String SYSTEM_PROMPT = String.valueOf(
+                Html.fromHtml(context.getString(R.string.system_prompt),
+                Html.FROM_HTML_MODE_COMPACT));
         List<Part> parts = new ArrayList<Part>();
         parts.add(new TextPart(SYSTEM_PROMPT));
         generativeModel = new GenerativeModel(
@@ -71,7 +74,8 @@ public class ModelManager {
     }
 
     public void sendMessage(String prompt, CallBacks callback) {
-        chat.getHistory().add(new Content("user", List.of(new TextPart(prompt))));
+        if (chat.getHistory().size() > 0)
+            chat.getHistory().add(new Content("user", List.of(new TextPart(prompt))));
         chat.sendMessage(prompt,
                 new Continuation<GenerateContentResponse>() {
                     @NonNull
@@ -86,7 +90,7 @@ public class ModelManager {
                         if (result instanceof Result.Failure) {
                             callback.onModelError(((Result.Failure) result).exception);
                         } else {
-                            chat.getHistory().remove(chat.getHistory().size()-2);
+                            chat.getHistory().remove(chat.getHistory().size()-2); //remove the user last message to void duplication
                             callback.onModelSuccess(((GenerateContentResponse) result).getText());
                         }
                     }

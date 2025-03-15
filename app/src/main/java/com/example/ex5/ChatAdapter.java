@@ -55,7 +55,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
     public void onBindViewHolder(@NonNull MessageViewHolder holder, int position) {
         Content content = chatHistory.get(position);
         TextPart textPart = (TextPart) content.getParts().get(0);
-        String message = textPart.getText();
+        String message = textPart.getText().trim();
         holder.messageTextView.setText(message);
     }
 

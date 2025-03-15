@@ -22,6 +22,7 @@ public class ChatViewModel extends AndroidViewModel implements ModelManager.Call
         super(application);
         modelManager = ModelManager.getInstance(application.getApplicationContext());
         chatHistoryLiveData.setValue(modelManager.getChat().getHistory());
+        sendMessage("");
     }
 
     public LiveData<List<Content>> getChatHistoryLiveData() {
