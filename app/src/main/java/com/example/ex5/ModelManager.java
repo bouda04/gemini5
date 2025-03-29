@@ -2,14 +2,10 @@ package com.example.ex5;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.os.Handler;
-import android.os.Looper;
 import android.text.Html;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import com.google.ai.client.generativeai.Chat;
 import com.google.ai.client.generativeai.GenerativeModel;
 import com.google.ai.client.generativeai.type.Content;
 import com.google.ai.client.generativeai.type.GenerateContentResponse;
@@ -18,12 +14,8 @@ import com.google.ai.client.generativeai.type.ImagePart;
 import com.google.ai.client.generativeai.type.RequestOptions;
 import com.google.ai.client.generativeai.type.TextPart;
 
-import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import kotlin.Result;
 import kotlin.coroutines.Continuation;
@@ -35,17 +27,17 @@ public class ModelManager {
     private static final String TAG = "ModelManager";
     private static final String API_KEY = BuildConfig.GEMINI_API_KEY;
     private static volatile ModelManager INSTANCE;
-    private final GenerativeModel generativeModel;
-    private Chat chat;
+    protected final GenerativeModel modelReference;
 
 
-    private ModelManager(Context context) {
+
+    protected ModelManager(Context context, int systemPromptId) {
         final String SYSTEM_PROMPT = String.valueOf(
-                Html.fromHtml(context.getString(R.string.system_prompt),
+                Html.fromHtml(context.getString(systemPromptId),
                 Html.FROM_HTML_MODE_COMPACT));
         List<Part> parts = new ArrayList<Part>();
         parts.add(new TextPart(SYSTEM_PROMPT));
-        generativeModel = new GenerativeModel(
+        modelReference = new GenerativeModel(
                 "gemini-2.0-flash",
                 API_KEY,
                 /* generation config */ null,
@@ -55,33 +47,32 @@ public class ModelManager {
                 /* tool config */ null,
                 /* system prompt */ new Content(parts)
         );
-        chat = generativeModel.startChat(Collections.emptyList());
-        //executorService = Executors.newSingleThreadExecutor();
-    }
-    public Chat getChat() {
-        return chat;
     }
 
-    public static ModelManager getInstance(Context context) {
+
+    public static ModelManager getInstance(Context context, int systemPromptId) {
         if (INSTANCE == null) {
             synchronized (ModelManager.class) {
                 if (INSTANCE == null) {
-                    INSTANCE = new ModelManager(context.getApplicationContext());
+                    INSTANCE = new ModelManager(context.getApplicationContext(), systemPromptId);
                 }
             }
         }
         return INSTANCE;
     }
 
-    public void sendMessage(String prompt, CallBacks callback) {
-        if (chat.getHistory().size() > 0)
-            chat.getHistory().add(new Content("user", List.of(new TextPart(prompt))));
-        chat.sendMessage(prompt,
+    public void sendMessage(String input, Bitmap bitmap, CallBacks callback) {
+        List<Part> parts = new ArrayList<>();
+        parts.add(new TextPart(input));
+        if (bitmap != null)
+            parts.add(new ImagePart(bitmap));
+
+        Content message = new Content("user", parts);
+        modelReference.generateContent(new Content[]{message},
                 new Continuation<GenerateContentResponse>() {
                     @NonNull
                     @Override
                     public CoroutineContext getContext() {
-
                         return EmptyCoroutineContext.INSTANCE;
                     }
 
@@ -90,37 +81,17 @@ public class ModelManager {
                         if (result instanceof Result.Failure) {
                             callback.onModelError(((Result.Failure) result).exception);
                         } else {
-                            chat.getHistory().remove(chat.getHistory().size()-2); //remove the user last message to void duplication
                             callback.onModelSuccess(((GenerateContentResponse) result).getText());
                         }
                     }
-                }
-        );
-        //Log.d(TAG, "sendMessage: " + chat.getHistory().size());
+        });
     }
 
-
-    /**
-     * Converts a Bitmap to a Part object for sending to the Gemini model.
-     *
-     * @param bitmap The Bitmap to convert.
-     * @return The Part object, or null if an error occurred.
-     */
-    private Part convertBitmapToPart(Bitmap bitmap) {
-        try {
-
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream);
-            byte[] byteArray = outputStream.toByteArray();
-            return new ImagePart(bitmap); //  .ImageData(byteArray, ImageType.IMAGE_JPEG);
-        } catch (Exception e) {
-            Log.e(TAG, "Error converting Bitmap to Part: " + e.getMessage(), e);
-            return null;
-        }
-    }
 
     public interface CallBacks{
         void onModelSuccess(String response);
         void onModelError(Throwable error);
     }
 }
+
+

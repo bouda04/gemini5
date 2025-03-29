@@ -47,7 +47,49 @@
         app:layout_constraintTop_toBottomOf="@id/etMessage"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/bottomBar"
         tools:listitem="@layout/model_message_item" />
+    <LinearLayout
+        android:id="@+id/bottomBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="#F0F0F0"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
+        <ImageButton
+            android:id="@+id/attachImageButton"
+            android:layout_width="16dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackground"
+            android:contentDescription="Attach Image"
+            android:src="@drawable/abc" />
+
+        <ImageButton
+            android:id="@+id/hintButton"
+            android:layout_width="0dp"
+            android:layout_height="63dp"
+            android:layout_weight="1"
+            android:scaleType="fitCenter"
+            android:background="?attr/selectableItemBackground"
+            android:contentDescription="Get Hint"
+            android:src="@drawable/help" />
+
+        <TextView
+            android:id="@+id/remainingQuestionsTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="20dp"
+            android:gravity="center"
+            android:layout_gravity="center"
+            android:layout_marginStart="16dp"
+            android:textSize="30sp"
+            android:textStyle="bold"
+            android:text="20" />  <!-- Example text -->
+
+    </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

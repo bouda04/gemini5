@@ -1,26 +1,24 @@
 package com.example.ex5;
 
 import android.app.Application;
-import android.graphics.Bitmap;
 
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import com.google.ai.client.generativeai.type.Content;
-import com.google.ai.client.generativeai.type.GenerateContentResponse;
 
 import java.util.List;
 
-public class ChatViewModel extends AndroidViewModel implements ModelManager.CallBacks{
+public class ChatViewModel extends AndroidViewModel {
 
     private final MutableLiveData<List<Content>> chatHistoryLiveData = new MutableLiveData<>();
 
-    private final ModelManager modelManager;
+    private final ChatManager modelManager;
 
     public ChatViewModel(Application application) {
         super(application);
-        modelManager = ModelManager.getInstance(application.getApplicationContext());
+        modelManager = ChatManager.getInstance(application.getApplicationContext(), R.string.system_prompt_game_chat);
         chatHistoryLiveData.setValue(modelManager.getChat().getHistory());
         sendMessage("");
     }
@@ -30,7 +28,7 @@ public class ChatViewModel extends AndroidViewModel implements ModelManager.Call
     }
 
     public void sendMessage(String message) {
-        modelManager.sendMessage(message, new ModelManager.CallBacks() {
+        modelManager.sendMessage(message, null, new ModelManager.CallBacks() {
             @Override
             public void onModelSuccess(String response) {
                 chatHistoryLiveData.postValue(modelManager.getChat().getHistory());
@@ -41,16 +39,10 @@ public class ChatViewModel extends AndroidViewModel implements ModelManager.Call
                 // Handle error
             }
         });
+        // next line is for having the user message displayed
+        // in the chat and not waiting for the model response
         chatHistoryLiveData.postValue(modelManager.getChat().getHistory());
     }
 
-    @Override
-    public void onModelSuccess(String response) {
 
-    }
-
-    @Override
-    public void onModelError(Throwable error) {
-
-    }
 }
