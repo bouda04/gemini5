@@ -84,4 +84,19 @@ public class ChatManager extends ModelManager{
     public void resetChat() {
         chat = modelReference.startChat(Collections.emptyList());
     }
+
+    public String getChatHistoryAsString() {
+        List<Content> history = chat.getHistory();
+        StringBuilder builder = new StringBuilder();
+        for (Content content : history) {
+            String role = content.getRole();
+            for (Part part : content.getParts()) {
+                if (part instanceof TextPart) {
+                    builder.append(role.equals("user") ? "User: " : "AI: ");
+                    builder.append(((TextPart) part).getText()).append("\n");
+                }
+            }
+        }
+        return builder.toString();
+    }
 }
