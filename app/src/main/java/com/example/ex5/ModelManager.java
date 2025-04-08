@@ -38,7 +38,8 @@ public class ModelManager {
         List<Part> parts = new ArrayList<Part>();
         parts.add(new TextPart(SYSTEM_PROMPT));
         modelReference = new GenerativeModel(
-                "gemini-2.5-pro-exp-03-25",
+                "gemini-2.0-flash",
+               // "gemini-2.5-pro-exp-03-25",
                 API_KEY,
                 /* generation config */ null,
                 /* safety setting */ null,

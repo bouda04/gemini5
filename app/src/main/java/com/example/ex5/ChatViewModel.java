@@ -1,6 +1,7 @@
 package com.example.ex5;
 
 import android.app.Application;
+import android.os.Handler;
 import android.util.Log;
 
 import androidx.lifecycle.AndroidViewModel;
@@ -16,9 +17,11 @@ public class ChatViewModel extends AndroidViewModel {
     private final MutableLiveData<List<Content>> chatHistoryLiveData = new MutableLiveData<>();
     private final MutableLiveData<String> monitorLiveData = new MutableLiveData<>();
     private final ChatManager modelManager;
+    private Handler handler;
 
     public ChatViewModel(Application application) {
         super(application);
+        this.handler = new Handler(getApplication().getMainLooper());
         //modelManager = ChatManager.getInstance(application.getApplicationContext(), R.string.system_prompt_game_chat);
         modelManager = new ChatManager(application.getApplicationContext(), R.string.system_prompt_game_chat);
         chatHistoryLiveData.setValue(modelManager.getChat().getHistory());
@@ -37,9 +40,33 @@ public class ChatViewModel extends AndroidViewModel {
         detector.sendCurrentScript(history, new ModelManager.CallBacks() {
             @Override
             public void onModelSuccess(String response) {
-                Log.i("monitor", response);
                 String[] parts = response.split(":");
-                monitorLiveData.postValue(parts[2].trim());
+                Log.i("monitor", response);
+                String responseToDisplay = parts[2].trim();
+
+                if (parts[0].equals("user")) {
+                    responseToDisplay += "\n" + getApplication().getString(R.string.wait_for_hint);
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            generateHint();
+                        }
+                    }, 4000);
+                }
+                monitorLiveData.postValue(responseToDisplay);
+            }
+            @Override
+            public void onModelError(Throwable error) {}
+        });
+    }
+
+    public void generateHint() {
+        MonitorManager hinter = MonitorManager.createForHint(getApplication().getApplicationContext());
+        String history = modelManager.getChatHistoryAsString();
+        hinter.sendCurrentScript(history, new ModelManager.CallBacks() {
+            @Override
+            public void onModelSuccess(String response) {
+                monitorLiveData.postValue(response);
             }
 
             @Override
