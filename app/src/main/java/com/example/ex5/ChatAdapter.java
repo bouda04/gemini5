@@ -74,10 +74,14 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
         int oldSize = this.chatHistory.size();
         for (int i = 0; i < newChatHistory.size()- oldSize; i++){
             chatHistory.add(newChatHistory.get(oldSize + i));
-            notifyItemInserted(oldSize + i);
+            //notifyItemInserted(oldSize + i);
         }
+        notifyDataSetChanged();
         if (chatHistory.size() > 0)
-            this.recyclerView.post(() -> recyclerView.smoothScrollToPosition(chatHistory.size() - 1));
+            recyclerView.postDelayed(() -> {
+                recyclerView.scrollToPosition(getItemCount() - 1);
+            }, 1000);
+            //this.recyclerView.post(() -> recyclerView.smoothScrollToPosition(chatHistory.size() - 1));
 
     }
 }

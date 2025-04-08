@@ -26,7 +26,7 @@ public class ChatManager extends ModelManager{
     private static volatile ChatManager instance;
     private Chat chat;
 
-    private ChatManager(Context context, int systemPromptId) {
+    public ChatManager(Context context, int systemPromptId) {
         super(context, systemPromptId);
         chat = modelReference.startChat(Collections.emptyList());
     }
@@ -92,7 +92,7 @@ public class ChatManager extends ModelManager{
             String role = content.getRole();
             for (Part part : content.getParts()) {
                 if (part instanceof TextPart) {
-                    builder.append(role.equals("user") ? "User: " : "AI: ");
+                    builder.append(role.equals("user") ? "user: " : "model: ");
                     builder.append(((TextPart) part).getText()).append("\n");
                 }
             }
