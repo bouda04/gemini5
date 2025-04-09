@@ -1,6 +1,7 @@
 package com.example.ex5;
 
 import android.app.Application;
+import android.content.Context;
 import android.os.Handler;
 import android.util.Log;
 
@@ -16,15 +17,17 @@ public class ChatViewModel extends AndroidViewModel {
 
     private final MutableLiveData<List<Content>> chatHistoryLiveData = new MutableLiveData<>();
     private final MutableLiveData<String> monitorLiveData = new MutableLiveData<>();
-    private final ChatManager modelManager;
+    private final ChatManager chatManager;
+    private Context appContext;
     private Handler handler;
 
     public ChatViewModel(Application application) {
         super(application);
+        this.appContext = application.getApplicationContext();
         this.handler = new Handler(getApplication().getMainLooper());
-        //modelManager = ChatManager.getInstance(application.getApplicationContext(), R.string.system_prompt_game_chat);
-        modelManager = new ChatManager(application.getApplicationContext(), R.string.system_prompt_game_chat);
-        chatHistoryLiveData.setValue(modelManager.getChat().getHistory());
+        //chatManager = ChatManager.getInstance(application.getApplicationContext(), R.string.system_prompt_game_chat);
+        chatManager = new ChatManager(application.getApplicationContext(), R.string.system_prompt_game_chat);
+        chatHistoryLiveData.setValue(chatManager.getChat().getHistory());
         sendMessage("");
     }
 
@@ -34,8 +37,8 @@ public class ChatViewModel extends AndroidViewModel {
     public LiveData<String> getMonitorLiveData() { return monitorLiveData; }
     public void startMonitor() {
         monitorLiveData.setValue(getApplication().getString(R.string.monitor_intro));
-        MonitorManager detector = MonitorManager.createForDetection(getApplication().getApplicationContext());
-        String history = modelManager.getChatHistoryAsString();
+        MonitorManager detector = MonitorManager.createForDetection(appContext);
+        String history = chatManager.getChatHistoryAsString();
         Log.i("monitor-history", "\n" + history);
         detector.sendCurrentScript(history, new ModelManager.CallBacks() {
             @Override
@@ -43,27 +46,34 @@ public class ChatViewModel extends AndroidViewModel {
                 String[] parts = response.split(":");
                 Log.i("monitor", response);
                 String responseToDisplay = parts[2].trim();
-
+                MonitorManager monitorAgent;
                 if (parts[0].equals("user")) {
                     responseToDisplay += "\n" + getApplication().getString(R.string.wait_for_hint);
+                    monitorAgent = MonitorManager.createForHint(appContext);
+                }
+                else if (parts[0].equals("model")) {
+                    responseToDisplay += "\n" + getApplication().getString(R.string.wait_for_critics);
+                    monitorAgent = MonitorManager.createForCritique(appContext);
+                }
+                else monitorAgent=null;
+                monitorLiveData.postValue(responseToDisplay);
+                if (monitorAgent != null) {
                     handler.postDelayed(new Runnable() {
                         @Override
                         public void run() {
-                            generateHint();
+                            generateReview(monitorAgent);
                         }
                     }, 4000);
                 }
-                monitorLiveData.postValue(responseToDisplay);
             }
             @Override
             public void onModelError(Throwable error) {}
         });
     }
 
-    public void generateHint() {
-        MonitorManager hinter = MonitorManager.createForHint(getApplication().getApplicationContext());
-        String history = modelManager.getChatHistoryAsString();
-        hinter.sendCurrentScript(history, new ModelManager.CallBacks() {
+    public void generateReview(MonitorManager modelAgent) {
+        String history = chatManager.getChatHistoryAsString();
+        modelAgent.sendCurrentScript(history, new ModelManager.CallBacks() {
             @Override
             public void onModelSuccess(String response) {
                 monitorLiveData.postValue(response);
@@ -76,10 +86,10 @@ public class ChatViewModel extends AndroidViewModel {
         });
     }
     public void sendMessage(String message) {
-        modelManager.sendMessage(message, null, new ModelManager.CallBacks() {
+        chatManager.sendMessage(message, null, new ModelManager.CallBacks() {
             @Override
             public void onModelSuccess(String response) {
-                chatHistoryLiveData.postValue(modelManager.getChat().getHistory());
+                chatHistoryLiveData.postValue(chatManager.getChat().getHistory());
             }
 
             @Override
@@ -89,7 +99,7 @@ public class ChatViewModel extends AndroidViewModel {
         });
         // next line is for having the user message displayed
         // in the chat and not waiting for the model response
-        chatHistoryLiveData.postValue(modelManager.getChat().getHistory());
+        chatHistoryLiveData.postValue(chatManager.getChat().getHistory());
     }
 
 
