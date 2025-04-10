@@ -10,6 +10,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import com.google.ai.client.generativeai.type.Content;
+import com.google.ai.client.generativeai.type.TextPart;
 
 import java.util.List;
 
@@ -20,11 +21,13 @@ public class ChatViewModel extends AndroidViewModel {
     private final ChatManager chatManager;
     private Context appContext;
     private Handler handler;
+    private String pendingCritique;
 
     public ChatViewModel(Application application) {
         super(application);
         this.appContext = application.getApplicationContext();
         this.handler = new Handler(getApplication().getMainLooper());
+        this.pendingCritique = null;
         //chatManager = ChatManager.getInstance(application.getApplicationContext(), R.string.system_prompt_game_chat);
         chatManager = new ChatManager(application.getApplicationContext(), R.string.system_prompt_game_chat);
         chatHistoryLiveData.setValue(chatManager.getChat().getHistory());
@@ -76,6 +79,10 @@ public class ChatViewModel extends AndroidViewModel {
         modelAgent.sendCurrentScript(history, new ModelManager.CallBacks() {
             @Override
             public void onModelSuccess(String response) {
+                if (modelAgent.getType().equals("critique"))
+                    pendingCritique = response;
+                else
+                    pendingCritique = null;
                 monitorLiveData.postValue(response);
             }
 
@@ -86,16 +93,48 @@ public class ChatViewModel extends AndroidViewModel {
         });
     }
     public void sendMessage(String message) {
+        List<Content> history = chatManager.getChat().getHistory();
+
+        // 1. Inject pending system critique if exists
+        boolean injected;
+        if (pendingCritique != null) {
+            Content critiqueMessage = new Content("user", List.of(
+                    new TextPart("[CRITIQUE-INTERNAL] " + pendingCritique)
+            ));
+            history.add(critiqueMessage);
+            injected = true;
+        }
+        else injected = false;
         chatManager.sendMessage(message, null, new ModelManager.CallBacks() {
             @Override
             public void onModelSuccess(String response) {
+                if (injected)
+                    cleanupInjectedCritique();
+                pendingCritique = null; // 4. Clear stored critique
                 chatHistoryLiveData.postValue(chatManager.getChat().getHistory());
             }
 
             @Override
             public void onModelError(Throwable error) {
-               Log.e("model error",error.getMessage());
+                if (injected)
+                    cleanupInjectedCritique();
+                Log.e("model error",error.getMessage());
             }
+            private void removeSystemMessages() {
+                List<Content> history = chatManager.getChat().getHistory();
+                history.removeIf(content -> "system".equals(content.getRole()));
+            }
+
+            private void cleanupInjectedCritique() {
+                boolean removed = history.removeIf(content ->
+                        "user".equals(content.getRole())
+                                && content.getParts().size() > 0
+                                && content.getParts().get(0) instanceof TextPart
+                                && ((TextPart) content.getParts().get(0)).getText().startsWith("[CRITIQUE-INTERNAL]")
+                );
+                Log.i("model cleanup","the history was cleaned up from critiques injections");
+            }
+
         });
         // next line is for having the user message displayed
         // in the chat and not waiting for the model response
