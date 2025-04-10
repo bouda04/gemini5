@@ -135,24 +135,19 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onSlide(@NonNull View bottomSheet, float slideOffset) {
-//                updateGuidelineToMatchBottomSheet(bottomSheet);
-//                if (slideOffset < 0.1f) {
-//                    // Forcefully collapse if close to bottom
-//                    bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
-//                }
-            }
+            public void onSlide(@NonNull View bottomSheet, float slideOffset) {}
         });
 
     }
     private void initiateAdapterAndViewModel(){
 
         chatViewModel = new ViewModelProvider(this).get(ChatViewModel.class);
-        chatAdapter = new ChatAdapter(chatViewModel.getChatHistoryLiveData().getValue());
-        rvChat.setAdapter(chatAdapter);
+
         rvChat.setLayoutManager(new LinearLayoutManager(this));
         chatViewModel.getChatHistoryLiveData().observe(this, chatHistory -> {
-            chatAdapter.updateData(chatHistory);
+            chatAdapter = new ChatAdapter(chatHistory);
+            rvChat.setAdapter(chatAdapter);
+            rvChat.post(() -> rvChat.scrollToPosition(chatAdapter.getItemCount() - 1));
         });
         monitorObserver = monitorResponse -> {
             if (monitorResponse != null) {

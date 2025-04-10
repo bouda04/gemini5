@@ -12,12 +12,14 @@ import androidx.lifecycle.MutableLiveData;
 import com.google.ai.client.generativeai.type.Content;
 import com.google.ai.client.generativeai.type.TextPart;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ChatViewModel extends AndroidViewModel {
 
-    private final MutableLiveData<List<Content>> chatHistoryLiveData = new MutableLiveData<>();
+    private final MutableLiveData<List<ChatItem>> chatHistoryLiveData = new MutableLiveData<>();
     private final MutableLiveData<String> monitorLiveData = new MutableLiveData<>();
+    private List<ChatItem> chatHistory;
     private final ChatManager chatManager;
     private Context appContext;
     private Handler handler;
@@ -30,11 +32,12 @@ public class ChatViewModel extends AndroidViewModel {
         this.pendingCritique = null;
         //chatManager = ChatManager.getInstance(application.getApplicationContext(), R.string.system_prompt_game_chat);
         chatManager = new ChatManager(application.getApplicationContext(), R.string.system_prompt_game_chat);
-        chatHistoryLiveData.setValue(chatManager.getChat().getHistory());
+        this.chatHistory = new ArrayList<ChatItem>();
+        chatHistoryLiveData.setValue(chatHistory);
         sendMessage("");
     }
 
-    public LiveData<List<Content>> getChatHistoryLiveData() {
+    public LiveData<List<ChatItem>> getChatHistoryLiveData() {
         return chatHistoryLiveData;
     }
     public LiveData<String> getMonitorLiveData() { return monitorLiveData; }
@@ -79,8 +82,12 @@ public class ChatViewModel extends AndroidViewModel {
         modelAgent.sendCurrentScript(history, new ModelManager.CallBacks() {
             @Override
             public void onModelSuccess(String response) {
-                if (modelAgent.getType().equals("critique"))
-                    pendingCritique = response;
+                if (modelAgent.getType().equals("critique")){
+                    int index = response.indexOf(':');
+                    pendingCritique = (index != -1 && index + 1 < response.length())
+                            ? response.substring(index + 1).trim()
+                            : null;
+                }
                 else
                     pendingCritique = null;
                 monitorLiveData.postValue(response);
@@ -111,7 +118,8 @@ public class ChatViewModel extends AndroidViewModel {
                 if (injected)
                     cleanupInjectedCritique();
                 pendingCritique = null; // 4. Clear stored critique
-                chatHistoryLiveData.postValue(chatManager.getChat().getHistory());
+                chatHistory.add(new ChatItem("model",response));
+                chatHistoryLiveData.postValue(chatHistory);
             }
 
             @Override
@@ -119,10 +127,6 @@ public class ChatViewModel extends AndroidViewModel {
                 if (injected)
                     cleanupInjectedCritique();
                 Log.e("model error",error.getMessage());
-            }
-            private void removeSystemMessages() {
-                List<Content> history = chatManager.getChat().getHistory();
-                history.removeIf(content -> "system".equals(content.getRole()));
             }
 
             private void cleanupInjectedCritique() {
@@ -136,9 +140,10 @@ public class ChatViewModel extends AndroidViewModel {
             }
 
         });
-        // next line is for having the user message displayed
-        // in the chat and not waiting for the model response
-        chatHistoryLiveData.postValue(chatManager.getChat().getHistory());
+        if (!message.isEmpty()){
+            chatHistory.add(new ChatItem("user",message));
+            chatHistoryLiveData.postValue(chatHistory);
+        }
     }
 
 

@@ -51,10 +51,6 @@ public class ChatManager extends ModelManager{
             parts.add(new ImagePart(bitmap));
 
         Content message = new Content("user", parts);
-        if (chat.getHistory().size() > 0) {
-            chat.getHistory().add(message);
-        }
-
         chat.sendMessage(message,
                 new Continuation<GenerateContentResponse>() {
                     @NonNull
@@ -68,21 +64,14 @@ public class ChatManager extends ModelManager{
                         if (result instanceof Result.Failure) {
                             callback.onModelError(((Result.Failure) result).exception);
                         } else {
-                            chat.getHistory().remove(chat.getHistory().size() - 2);
                             callback.onModelSuccess(((GenerateContentResponse) result).getText());
                         }
                     }
                 });
     }
 
-    public List<Content> getChatHistory() {
-        return chat.getHistory();
-    }
     public Chat getChat() {
         return chat;
-    }
-    public void resetChat() {
-        chat = modelReference.startChat(Collections.emptyList());
     }
 
     public String getChatHistoryAsString() {

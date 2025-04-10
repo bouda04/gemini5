@@ -19,13 +19,11 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
     private static final int VIEW_TYPE_USER = 0;
     private static final int VIEW_TYPE_MODEL = 1;
 
-    private List<Content> chatHistory;
+    private List<ChatItem> chatHistory;
     private RecyclerView recyclerView;
 
-    public ChatAdapter(List<Content> chatHistory) {
-
-        this.chatHistory = new ArrayList<Content>();
-
+    public ChatAdapter(List<ChatItem> chatHistory) {
+        this.chatHistory = chatHistory;
     }
 
     @Override
@@ -34,13 +32,19 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
         this.recyclerView = recyclerView; // Store reference to RecyclerView
     }
 
-    public static class MessageViewHolder extends RecyclerView.ViewHolder {
-        public TextView messageTextView;
+    public class MessageViewHolder extends RecyclerView.ViewHolder {
+        private TextView messageTextView;
 
         public MessageViewHolder(View itemView) {
             super(itemView);
             messageTextView = itemView.findViewById(R.id.messageTextView);
         }
+
+        public void fillRowData(int position) {
+            ChatItem chatItem = chatHistory.get(position);
+            messageTextView.setText(chatItem.getMessage());
+        }
+
     }
 
     @NonNull
@@ -53,10 +57,10 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
 
     @Override
     public void onBindViewHolder(@NonNull MessageViewHolder holder, int position) {
-        Content content = chatHistory.get(position);
-        TextPart textPart = (TextPart) content.getParts().get(0);
-        String message = textPart.getText().trim();
-        holder.messageTextView.setText(message);
+        ChatItem chatItem = chatHistory.get(position);
+        //TextPart textPart = (TextPart) content.getParts().get(0);
+        //String message = textPart.getText().trim();
+        holder.fillRowData(position);
     }
 
     @Override
@@ -66,22 +70,22 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
 
     @Override
     public int getItemViewType(int position) {
-        Content content = chatHistory.get(position);
-        return (content.getRole() != null && content.getRole().equals("user")) ? VIEW_TYPE_USER : VIEW_TYPE_MODEL;
+        ChatItem chatItem = chatHistory.get(position);
+        return (chatItem.getRole() != null && chatItem.getRole().equals("user")) ? VIEW_TYPE_USER : VIEW_TYPE_MODEL;
     }
 
-    public void updateData(List<Content> newChatHistory) {
-        int oldSize = this.chatHistory.size();
-        for (int i = 0; i < newChatHistory.size()- oldSize; i++){
-            chatHistory.add(newChatHistory.get(oldSize + i));
-            //notifyItemInserted(oldSize + i);
-        }
-        notifyDataSetChanged();
-        if (chatHistory.size() > 0)
-            recyclerView.postDelayed(() -> {
-                recyclerView.scrollToPosition(getItemCount() - 1);
-            }, 1000);
-            //this.recyclerView.post(() -> recyclerView.smoothScrollToPosition(chatHistory.size() - 1));
-
-    }
+//    public void updateData(List<Content> newChatHistory) {
+//        int oldSize = this.chatHistory.size();
+//        for (int i = 0; i < newChatHistory.size()- oldSize; i++){
+//            chatHistory.add(newChatHistory.get(oldSize + i));
+//            //notifyItemInserted(oldSize + i);
+//        }
+//        notifyDataSetChanged();
+//        if (chatHistory.size() > 0)
+//            recyclerView.postDelayed(() -> {
+//                recyclerView.scrollToPosition(getItemCount() - 1);
+//            }, 1000);
+//            //this.recyclerView.post(() -> recyclerView.smoothScrollToPosition(chatHistory.size() - 1));
+//
+//    }
 }
